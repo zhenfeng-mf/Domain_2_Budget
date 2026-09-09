@@ -1,0 +1,13 @@
+current_travel:
+  team: alpha
+  category: travel
+  year_month: <%= Time.zone.today.beginning_of_month.to_s %>
+  amount: 100000
+  approved_total: 30000
+
+next_books:
+  team: alpha
+  category: books
+  year_month: <%= Time.zone.today.next_month.beginning_of_month.to_s %>
+  amount: 50000
+  approved_total: 0
