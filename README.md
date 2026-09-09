@@ -1,24 +1,21 @@
-# README
+# Budget App
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+A Ruby on Rails application built with Rails 8 and MySQL 9.
 
-Things you may want to cover:
+## Requirements & Stack
 
-* Ruby version
+* **Ruby:** 3.2.3 (or as specified in `.ruby-version`)
+* **Rails:** 8.0+
+* **Database:** MySQL 9.0+ (managed via Docker Compose)
+* **Docker & Docker Compose**
 
-* System dependencies
+---
 
-* Configuration
+## Local Development Setup
 
-* Database creation
+Follow these steps to set up and run the application locally:
 
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+### 1. Clone the Repository
+```bash
+git clone <your-repository-url>
+cd budget_app

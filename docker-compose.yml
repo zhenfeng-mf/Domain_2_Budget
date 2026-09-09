@@ -1,0 +1,47 @@
+services:
+  db:
+    image: mysql:9.0.1
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: budget_app_development
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"] 
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    command: bin/rails server -b 0.0.0.0
+    volumes:
+      - .:/rails
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      MYSQL_ROOT_PASSWORD: password
+      RAILS_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+  
+  css:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    command: bin/rails tailwindcss:watch
+    volumes:
+      - .:/rails
+    environment:
+      RAILS_ENV: development
+    depends_on:
+      - web
+
+
+volumes:
+  mysql_data:
