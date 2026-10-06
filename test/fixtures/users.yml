@@ -1,0 +1,20 @@
+taro:
+  name: taro
+  email: taro@example.com
+  password_digest: <%= BCrypt::Password.create("password", cost: 4) %>
+  role: member
+  team: alpha
+
+jiro:
+  name: jiro
+  email: jiro@example.com
+  password_digest: <%= BCrypt::Password.create("password", cost: 4) %>
+  role: member
+  team: alpha
+
+hanako:
+  name: 花子
+  email: hanako@example.com
+  password_digest: <%= BCrypt::Password.create("password", cost: 4) %>
+  role: approver
+  team: alpha

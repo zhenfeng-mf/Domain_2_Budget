@@ -1,0 +1,27 @@
+taro_draft:
+  user: taro
+  category: travel
+  used_on: <%= Time.zone.today.to_s %>
+  amount: 1200
+  purpose: 顧客訪問の交通費
+  status: draft
+
+taro_submitted:
+  user: taro
+  category: travel
+  used_on: <%= Time.zone.today.to_s %>
+  amount: 5000
+  purpose: 出張の交通費
+  status: submitted
+  submitted_at: <%= Time.current.to_fs(:db) %>
+
+taro_approved:
+  user: taro
+  category: travel
+  used_on: <%= Time.zone.today.to_s %>
+  amount: 30000
+  purpose: 承認済みの交通費
+  status: approved
+  submitted_at: <%= 2.days.ago.to_fs(:db) %>
+  decided_at: <%= 1.day.ago.to_fs(:db) %>
+  decided_by: hanako
