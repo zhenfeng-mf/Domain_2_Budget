@@ -15,6 +15,7 @@ class ApproveExpense
   # order or concurrent approvals can deadlock instead of serialising.
   def call
     Expense.transaction do
+      # expense = Expense.find(@expense_id) for tests, but we need to lock the row for real concurrency.
       expense = Expense.lock.find(@expense_id)
 
       raise Refused, "承認者のみ承認できます" unless @approver.approver?
