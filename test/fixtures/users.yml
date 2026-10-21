@@ -17,4 +17,3 @@ hanako:
   email: hanako@example.com
   password_digest: <%= BCrypt::Password.create("password", cost: 4) %>
   role: approver
-  team: alpha

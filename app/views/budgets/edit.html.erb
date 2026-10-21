@@ -1,0 +1,25 @@
+<% content_for :title, "予算額を変更 | Budget App" %>
+
+<h1 class="mb-6 text-2xl font-semibold">予算額を変更</h1>
+<p class="mb-4"><%= @budget.team.name %> — <%= MonthBucket.label(@budget.year_month) %> — <%= @budget.category.name %></p>
+<p class="mb-4">承認済み: <%= number_to_currency(@budget.approved_total, unit: "¥", precision: 0) %></p>
+
+<% if @budget.errors.any? %>
+  <div role="alert" class="mb-4 theme-alert theme-alert-error">
+    <ul class="list-disc pl-5">
+      <% @budget.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<%= form_with model: @budget, class: "space-y-4" do |form| %>
+  <div>
+    <%= form.label :amount, "予算額（円）", class: "mb-1 block" %>
+    <%= form.number_field :amount, min: @budget.approved_total, step: 1, required: true, class: "theme-control w-full" %>
+  </div>
+  <%= form.submit "更新する", class: "theme-button" %>
+<% end %>
+
+<p class="mt-6"><%= link_to "予算一覧に戻る", budgets_path, class: "theme-link" %></p>

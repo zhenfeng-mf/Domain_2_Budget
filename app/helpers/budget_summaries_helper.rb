@@ -1,0 +1,2 @@
+module BudgetSummariesHelper
+end

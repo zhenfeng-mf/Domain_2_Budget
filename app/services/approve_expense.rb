@@ -18,9 +18,10 @@ class ApproveExpense
       # expense = Expense.find(@expense_id) for tests, but we need to lock the row for real concurrency.
       expense = Expense.lock.find(@expense_id)
 
-      raise Refused, "承認者のみ承認できます" unless @approver.approver?
+      raise Refused, "承認者のみ承認できます" unless @approver&.approver?
       raise Refused, "申請済みの申請のみ承認できます（I-05）" unless expense.submitted?
       raise Refused, "自分の申請は承認できません（A-04）" if expense.user_id == @approver.id
+      raise Refused, "このチームの承認者ではありません" unless expense.user.team.approver_id == @approver.id
 
       budget = Budget.lock.find_by(
         team_id:     expense.user.team_id,

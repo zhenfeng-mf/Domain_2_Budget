@@ -1,0 +1,17 @@
+<% content_for :title, "ログイン | Budget App" %>
+
+<h1 class="mb-6 text-2xl font-semibold">ログイン</h1>
+
+<%= form_with url: login_path, class: "space-y-4" do |form| %>
+  <div>
+    <%= form.label :email, "メールアドレス", class: "mb-1 block" %>
+    <%= form.email_field :email, value: params[:email], required: true, autocomplete: "username", class: "theme-control w-full" %>
+  </div>
+  <div>
+    <%= form.label :password, "パスワード", class: "mb-1 block" %>
+    <%= form.password_field :password, required: true, autocomplete: "current-password", class: "theme-control w-full" %>
+  </div>
+  <%= form.submit "ログイン", class: "theme-button" %>
+<% end %>
+
+<p class="mt-6">アカウントがありませんか？ <%= link_to "新規登録", signup_path, class: "theme-link" %></p>

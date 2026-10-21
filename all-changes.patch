@@ -1,0 +1,456 @@
+diff --git a/.DS_Store b/.DS_Store
+index 98d7d39..3b0425a 100644
+Binary files a/.DS_Store and b/.DS_Store differ
+diff --git a/AI_USAGE.md b/AI_USAGE.md
+index e69de29..c82a139 100644
+--- a/AI_USAGE.md
++++ b/AI_USAGE.md
+@@ -0,0 +1,19 @@
++# AI_USAGE — suggestions and verification
++
++Use dummy data only. Record tool, purpose, what was accepted or rejected, and how the result was checked. Keep adding verified examples here before submission.
++
++| Date | Tool | Work | Verification or correction |
++| --- | --- | --- | --- |
++| 2026-09-08 | Notion AI | Mapped the assignment's evaluation criteria and planned deliverables | Rechecked the map against the original assignment. |
++| 2026-09-09 | Notion AI | Compared stored and derived approved totals and proposed concurrency handling | Chose a stored total **and kept a row lock**; the check constraint cannot serialize a read-modify-write. Verified with a two-thread test. |
++| 2026-09-09 | Notion AI | Drafted migrations, models, and DB tests | Running in Docker exposed four corrections: Rails migration version 8.1; quoting MySQL's `year_month` identifier; replacing removed `to_s(:db)`; and matching fixture `approved_total` to approved expense rows. |
++| 2026-09-09 | Notion AI | Reviewed design notes for contradictions | Fixed the budget unique key to include `team_id` and avoided a mutual non-null team/user foreign-key insertion cycle. |
++| 2026-09-09 | Notion AI | Suggested unsigned integer money columns | Rejected: adapter range checks could hide whether the named DB `CHECK` was actually exercised. Kept signed integers plus checks. |
++
++## How to validate future AI work
++
++- Review each diff and be able to explain it.
++- Run the relevant test and browser path; add a test when a business rule changes.
++- Check version-specific claims against official documentation.
++- Reproduce a failure before accepting an explanation or fix.
++- Log a rejected suggestion with the reason and the alternative chosen.
+diff --git a/DECISIONS.md b/DECISIONS.md
+index b6ee13b..5e1e150 100644
+--- a/DECISIONS.md
++++ b/DECISIONS.md
+@@ -1,11 +1,25 @@
+-## Decision n (for copy paste)
+-### What I chose
+-### What I rejected
+-### Why
++# DECISIONS — choices to explain in review
+ 
++Add new decisions with date, choice, alternative, and reason. If a choice changes, record the replacement below instead of silently changing history. These are design decisions, not claims that every planned screen is implemented.
+ 
+-----------------------------------
+-## Decision 1
+-### What I chose
+-### What I rejected
+-### Why
++| ID | Date | Choice | Alternative and reason |
++| --- | --- | --- | --- |
++| D-01 | 2026-09-08 | Rails 8/MySQL 9 with Minitest | Framework defaults keep setup small; RSpec adds no needed capability here. |
++| D-02 | 2026-09-08 | Integer yen | Avoid float rounding for JPY. |
++| D-03 | 2026-09-08 | `used_on` as a date | A datetime could move an expense into another month through timezone conversion. |
++| D-04 | 2026-09-09 | Store `Budget.approved_total` | A read-time sum cannot be protected by a row-level DB `CHECK`. Cost: possible counter drift, detected with `approved_sum` in tests. |
++| D-05 | 2026-09-09 | Lock expense, then budget; recheck the cap; keep a DB `CHECK` backstop | A check alone cannot serialize read-modify-write. A lock alone depends on every future write path remembering it. Cost: same-budget approvals serialize. This is the main presentation decision. |
++| D-06 | 2026-09-08 | Tailwind through `tailwindcss-rails` | Styling can live beside ERB; cost is a separate CSS build/watch step. |
++| D-07 | 2026-09-09 | Separate development and production Dockerfiles | Faster local iteration and smaller production image; cost is maintaining both. |
++| D-08 | 2026-09-09 | Budget month is a date pinned to its first day | Sorts and indexes cleanly; DB `CHECK` protects the canonical month value. |
++| D-09 | 2026-09-09 | Simple `has_secure_password` and session auth | Devise and Rails' full auth generator add flows outside this assignment. Password reset and lockout remain out of scope. Auth screens are **not installed yet**. |
++| D-10 | 2026-09-09 | Teams exist in the schema; no team management UI | A company-wide budget would mix teams. Seeds create teams; `approver_id` is nullable during team/user bootstrap. |
++| D-12 | 2026-09-09 | Build browser-visible vertical slices | Model-first work left the services unreachable. Every next slice should include its route, screen, authorization, and test. |
++| D-13 | 2026-10-06 | Use eight remaining workdays × seven hours; freeze after Day 5 | The old 64-hour Day 2/Day 3 calendar no longer describes the restart. Required flow, deployment, and rehearsal take priority over optional features. |
++
++## Replacements and cautions
++
++- Earlier notes describe a budget as unique by month/category alone. Current schema scopes it to **team, month, category**.
++- Earlier notes leave approved use as stored versus derived. It is **stored** in `Budget.approved_total`.
++- The Day 2 implementation pack included auth and seed code examples. They were **not installed** in the repository; use the current state page and application files for implementation status.
++- The optional feature has not been chosen; keep a 4–7 hour placeholder until the required flow is deployed and verified.
+diff --git a/DESIGN.md b/DESIGN.md
+index e69de29..2beb47c 100644
+--- a/DESIGN.md
++++ b/DESIGN.md
+@@ -0,0 +1,45 @@
++# DESIGN — the rules behind the flow
++
++## Data model
++
++| Model | Purpose | Important fields |
++| --- | --- | --- |
++| `Team` | Owns budgets; points to its approver | `name`, `approver_id` |
++| `User` | Member or approver in one team | `team_id`, `role`, `password_digest` |
++| `Category` | Shared expense category | `name` |
++| `Budget` | Cap for one team/month/category | `year_month`, `amount`, `approved_total` |
++| `Expense` | Member's claim against a budget | `used_on`, `amount`, `purpose`, `status`, decision fields |
++
++Money is integer yen. `used_on` is a date; `MonthBucket.for` determines its budget month. The unique budget index is `(team_id, year_month, category_id)`. `Team.approver_id` is temporarily nullable so a team and its approver can be created without an impossible foreign-key insertion cycle.
++
++## State changes
++
++| From | Action | To | Guard |
++| --- | --- | --- | --- |
++| — | Member creates | 下書き | Own record |
++| 下書き | Member submits | 申請済み | Matching team/month/category budget exists |
++| 申請済み | Assigned approver approves | 承認済み | Enough remaining budget; not own request |
++| 申請済み | Assigned approver rejects | 却下 | Not own request |
++| 承認済み / 却下 | Any edit or second decision | — | Refused: terminal |
++
++A member may correct a submitted request, but cannot change its usage date. Category changes require a matching budget. Server-side controllers must scope member records to their owner and approver records to assigned teams.
++
++## Budget cap — the key design
++
++`Budget.approved_total` stores approved spending. `ApproveExpense` locks the expense **then** the budget, checks the current remaining amount, and updates the budget and expense in one transaction. MySQL also enforces `approved_total <= amount`. Two approvals against one budget therefore serialize; the database check is a backstop. `Budget#approved_sum` checks for counter drift in tests. Preserve expense → budget lock order in every future write path.
++
++**Known gap:** the current decision services check the approver role and self-approval, but do not yet check whether the user is the expense team's assigned approver. Add this before creating approval/rejection routes.
++
++## Invariants and proof
++
++| Invariant | Current enforcement | Next proof or UI work |
++| --- | --- | --- |
++| Approved use never exceeds budget | Locked transaction + DB `CHECK` | Keep two-thread test; add exact-cap and one-yen-over browser cases |
++| One budget per team/month/category | Validation + unique index | Exercise duplicate error in budget form |
++| Positive integer expense; nonnegative budget | Validation + DB checks | Show useful form errors |
++| Decisions only once from submitted | Service state guards + status DB check | Add controller and browser tests |
++| Usage month and submitted-date immutability | `MonthBucket` + model validation | Add month-boundary and submitted-edit tests |
++| Owner and assigned-team access | `Expense#editable_by?` partly exists | Enforce in controllers and decision services; test foreign IDs |
++| Approved/rejected records stay unchanged | Model validation | Keep service and direct-edit tests |
++
++A database `CHECK` cannot enforce owner permissions, previous-row values, or existence of a matching budget across tables. Those require application checks and request tests.
+diff --git a/Gemfile b/Gemfile
+index 9e444be..e668f30 100644
+--- a/Gemfile
++++ b/Gemfile
+@@ -16,6 +16,8 @@ gem "turbo-rails"
+ gem "stimulus-rails"
+ # Build JSON APIs with ease [https://github.com/rails/jbuilder]
+ gem "jbuilder"
++# Rails 8.1.3.1 compatibility with JSON parsing
++gem "json", "< 3.0"
+ 
+ # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
+ # gem "bcrypt", "~> 3.1.7"
+diff --git a/README.md b/README.md
+index f5f52d9..b9ab5a5 100644
+--- a/README.md
++++ b/README.md
+@@ -1,21 +1,19 @@
+-# Budget App
++# Team Budget and Expense Requests
+ 
+-A Ruby on Rails application built with Rails 8 and MySQL 9.
++A Ruby on Rails 8 and MySQL 9 project for team budgets and expense approval. The core browser flow is still being built. The current position is recorded in [project status](docs/status.md).
+ 
+-## Requirements & Stack
++## Project documents
+ 
+-* **Ruby:** 3.2.3 (or as specified in `.ruby-version`)
+-* **Rails:** 8.0+
+-* **Database:** MySQL 9.0+ (managed via Docker Compose)
+-* **Docker & Docker Compose**
++- [Eight-day plan](docs/plan.md) — 56-hour schedule and checkpoints
++- [Task checklist](docs/tasks.md) — small tasks with completion checks
++- [Requirements](REQUIREMENTS.md) — users, required flow, and business rules
++- [Design](DESIGN.md) and [decisions](DECISIONS.md) — data model and tradeoffs
++- [Testing](TESTING.md) and [AI usage](AI_USAGE.md) — evidence and verification
+ 
+----
++## Setup
+ 
+-## Local Development Setup
++Docker Compose, migrations, seeds, and browser access will be verified on Day 1. Add the exact clean-clone commands and demo accounts here after that check.
+ 
+-Follow these steps to set up and run the application locally:
++## Public demo
+ 
+-### 1. Clone the Repository
+-```bash
+-git clone <your-repository-url>
+-cd budget_app
++Deployment URL: **TBD**. Hosting and demo data will be confirmed before submission.
+diff --git a/REQUIREMENTS.md b/REQUIREMENTS.md
+index e69de29..5620b7d 100644
+--- a/REQUIREMENTS.md
++++ b/REQUIREMENTS.md
+@@ -0,0 +1,43 @@
++# REQUIREMENTS — team budget and expense app
++
++## Problem and users
++
++Small teams manage budgets and expense approvals in chat and spreadsheets. An approver needs to see the **true remaining budget at the decision point** and be confident that approval cannot overspend it.
++
++| User | Needs to do | Must be prevented from doing |
++| --- | --- | --- |
++| **Member (メンバー)** | Draft, edit/delete own draft, submit, and track own requests | Manage budgets, decide requests, or read/change another member's records |
++| **Approver (承認者)** | Set budgets for assigned teams; see pending requests and remaining balance; approve or reject | Decide another team's request or approve their own request |
++
++## Required browser flow
++
++1. Register and log in as either role; log out.
++2. Approver sets a budget for a team, month, and category.
++3. Member creates an expense draft with usage date (利用日), category, integer-yen amount, and purpose; then submits it.
++4. The team's approver sees the request **with remaining budget beside it**, approves or rejects once, and sees the result.
++5. Both roles see budget amount, approved use, and remaining by month/category. Members see their own requests and states.
++
++The value moment is a successful approval that restates the **new remaining amount**. Refusal must say how much was available.
++
++## Business rules
++
++| Rule | Chosen behavior |
++| --- | --- |
++| Budget identity | One per **team, month, category**. |
++| Money | Integer yen; expense ≥ ¥1, budget ≥ ¥0, remaining never negative. |
++| Month | Expense counts against the month of its usage date. `Budget.year_month` is the first day of that month. |
++| States | 下書き → 申請済み → 承認済み or 却下. Decisions happen only once and only from 申請済み. |
++| Editing | Member can edit/delete own draft. A submitted request may be corrected, but its usage date is frozen; approved/rejected requests are terminal. |
++| Missing budget | Submission is blocked if its team/month/category has no budget. |
++| Approver | May serve more than one team, but may decide only requests for teams assigned to them; cannot approve their own request. |
++| Budget changes | No past-month budget creation; only future-month amounts can be adjusted; never lower below approved use. |
++
++The submitted-edit, terminal-rejection, missing-budget, and per-team-approver rules resolve gaps in the original spec. They are recorded as project choices, not presented as explicit original requirements.
++
++## Optional feature — placeholder
++
++**TBD; estimate 4–7 hours.** Determine the user problem, feature, and acceptance check in Day 5 task 5.5, or defer it. Build it only if time remains after the required work. See [docs/tasks.md](docs/tasks.md).
++
++## Outside this 56-hour build
++
++Team management UI, password reset, email confirmation, invite system, multi-level approvals, and attachments. Teams and demo users come from seeds. The app still needs server-side session and role checks. Public signup that can choose “approver” is a known demo security limitation to decide before deployment.
+diff --git a/app/controllers/application_controller.rb b/app/controllers/application_controller.rb
+index c353756..6bf99fe 100644
+--- a/app/controllers/application_controller.rb
++++ b/app/controllers/application_controller.rb
+@@ -1,7 +1,22 @@
+ class ApplicationController < ActionController::Base
++  
++  include Authentication
++
+   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
+   allow_browser versions: :modern
+ 
+   # Changes to the importmap will invalidate the etag for HTML responses
+   stale_when_importmap_changes
++
++  around_action :log_rendering_error
++
++  private
++
++  def log_rendering_error
++    yield
++  rescue StandardError => error
++    Rails.logger.error(error.full_message(highlight: false))
++    raise
++  end
++
+ end
+diff --git a/app/controllers/concerns/authentication.rb b/app/controllers/concerns/authentication.rb
+index e69de29..9dc27ec 100644
+--- a/app/controllers/concerns/authentication.rb
++++ b/app/controllers/concerns/authentication.rb
+@@ -0,0 +1,37 @@
++module Authentication
++  extend ActiveSupport::Concern
++
++  included do
++    helper_method :current_user, :signed_in?
++    before_action :require_sign_in
++  end
++
++  private
++
++  def current_user
++    @current_user ||= User.find_by(id: session[:user_id])
++  end
++
++  def signed_in?
++    current_user.present?
++  end
++
++  def sign_in(user)
++    reset_session
++    session[:user_id] = user.id
++    @current_user = user
++  end
++
++  def sign_out
++    reset_session
++    @current_user = nil
++  end
++
++  def require_sign_in
++    unless signed_in?
++      flash[:alert] = "Please sign in to continue."
++      redirect_to login_path
++    end
++  end
++
++end
+diff --git a/app/models/user.rb b/app/models/user.rb
+index cdf4a45..19814da 100644
+--- a/app/models/user.rb
++++ b/app/models/user.rb
+@@ -1,7 +1,7 @@
+ class User < ApplicationRecord
+   has_secure_password
+ 
+-  belongs_to :team
++  belongs_to :team, optional: true 
+   has_many :expenses, dependent: :restrict_with_error
+   has_many :approving_teams, class_name: "Team", foreign_key: :approver_id,
+            inverse_of: :approver, dependent: :restrict_with_error
+@@ -13,4 +13,6 @@ class User < ApplicationRecord
+   validates :name,  presence: true, length: { maximum: 50 }
+   validates :email, presence: true, uniqueness: true,
+             format: { with: URI::MailTo::EMAIL_REGEXP }
++  validates :team, presence: true, if: :member?
++  validates :team, absence: true, if: :approver?
+ end
+diff --git a/app/views/layouts/application.html.erb b/app/views/layouts/application.html.erb
+index 7c69f81..7aad988 100644
+--- a/app/views/layouts/application.html.erb
++++ b/app/views/layouts/application.html.erb
+@@ -24,7 +24,10 @@
+   </head>
+ 
+   <body>
+-    <main class="container mx-auto mt-28 px-5 flex">
++    <main class="container mx-auto mt-28 px-5">
++      <% if flash[:alert].present? %>
++        <p role="alert"><%= flash[:alert] %></p>
++      <% end %>
+       <%= yield %>
+     </main>
+   </body>
+diff --git a/config/routes.rb b/config/routes.rb
+index 48254e8..f2232dd 100644
+--- a/config/routes.rb
++++ b/config/routes.rb
+@@ -11,4 +11,7 @@ Rails.application.routes.draw do
+ 
+   # Defines the root path route ("/")
+   # root "posts#index"
++  
++  get "login" => "sessions#new", as: :login
++
+ end
+diff --git a/db/schema.rb b/db/schema.rb
+index 8bbc675..d44a3ac 100644
+--- a/db/schema.rb
++++ b/db/schema.rb
+@@ -10,7 +10,7 @@
+ #
+ # It's strongly recommended that you check this file into your version control system.
+ 
+-ActiveRecord::Schema[8.1].define(version: 2026_09_09_053850) do
++ActiveRecord::Schema[8.1].define(version: 2026_10_07_043634) do
+   create_table "budgets", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+     t.integer "amount", null: false
+     t.integer "approved_total", default: 0, null: false
+@@ -72,7 +72,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_09_053850) do
+     t.string "name", null: false
+     t.string "password_digest", null: false
+     t.integer "role", default: 0, null: false
+-    t.bigint "team_id", null: false
++    t.bigint "team_id"
+     t.datetime "updated_at", null: false
+     t.index ["email"], name: "index_users_on_email", unique: true
+     t.index ["team_id"], name: "index_users_on_team_id"
+diff --git a/db/seeds.rb b/db/seeds.rb
+index 4fbd6ed..dc1ec54 100644
+--- a/db/seeds.rb
++++ b/db/seeds.rb
+@@ -1,9 +1,88 @@
+-# This file should ensure the existence of records required to run the application in every environment (production,
+-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
+-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
+-#
+-# Example:
+-#
+-#   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
+-#     MovieGenre.find_or_create_by!(name: genre_name)
+-#   end
++## db/seeds.rb
++
++# db/seeds.rb
++# Development/demo data only — do not use these credentials in production.
++
++if Rails.env.production?
++  abort "These demo seeds must not run in production."
++end
++
++ApplicationRecord.transaction do
++  # 1. Approver: no membership team
++  approver = User.find_or_create_by!(
++    email: "approver@example.com"
++  ) do |user|
++    user.name = "Alex"
++    user.role = :approver
++    user.team = nil
++    user.password = "DemoPassword123!"
++    user.password_confirmation = "DemoPassword123!"
++  end
++
++  unless approver.approver? && approver.team_id.nil?
++    raise "Existing demo approver does not match the new role/team rules."
++  end
++
++  # 2. Teams: both assigned to Alex
++  teams = ["Team Alpha", "Team Beta"].map do |name|
++    team = Team.find_or_create_by!(name: name) do |record|
++      record.approver = approver
++    end
++
++    unless team.approver_id == approver.id
++      raise "#{name} already has a different approver."
++    end
++
++    team
++  end
++
++  # 3. Members: each belongs to exactly one team
++  member_data = [
++    ["Taylor", "alpha1@example.com", teams[0]],
++    ["Morgan", "alpha2@example.com", teams[0]],
++    ["Casey",  "beta1@example.com",  teams[1]],
++    ["Riley",  "beta2@example.com",  teams[1]]
++  ]
++
++  member_data.each do |name, email, team|
++    member = User.find_or_create_by!(email: email) do |user|
++      user.name = name
++      user.role = :member
++      user.team = team
++      user.password = "DemoPassword123!"
++      user.password_confirmation = "DemoPassword123!"
++    end
++
++    unless member.member? && member.team_id == team.id
++      raise "#{email} already exists with a different role or team."
++    end
++  end
++
++  # 4. Shared categories
++  categories = ["交通費", "書籍費", "会議費"].map do |name|
++    Category.find_or_create_by!(name: name)
++  end
++
++  # 5. One current-month budget per team/category
++  teams.each do |team|
++    categories.each do |category|
++      Budget.find_or_create_by!(
++        team: team,
++        category: category,
++        year_month: MonthBucket.current
++      ) do |budget|
++        budget.amount = 100_000
++        budget.approved_total = 0
++      end
++    end
++  end
++end
++
++puts "Demo data ready."
++puts "Approver: approver@example.com"
++puts "Members: alpha1@example.com, alpha2@example.com"
++puts "         beta1@example.com, beta2@example.com"
++puts "Password for newly created accounts: DemoPassword123!"
++
++
++

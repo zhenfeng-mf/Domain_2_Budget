@@ -1,0 +1,12 @@
+<% content_for :title, "予算サマリー | Budget App" %>
+
+<h1 class="mb-2 text-2xl font-semibold">予算サマリー</h1>
+<p class="mb-6"><%= current_user.member? ? current_user.team.name : "担当チーム" %>の予算</p>
+
+<% if @budgets.any? %>
+  <%= render "budgets/table", budgets: @budgets, show_actions: false %>
+<% else %>
+  <p>表示できる予算はまだありません。</p>
+<% end %>
+
+<p class="mt-6"><%= link_to "ホームに戻る", root_path, class: "theme-link" %></p>

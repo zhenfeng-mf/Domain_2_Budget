@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_09_053850) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_13_060139) do
   create_table "budgets", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.integer "amount", null: false
     t.integer "approved_total", default: 0, null: false
@@ -58,7 +58,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_09_053850) do
   end
 
   create_table "teams", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "approver_id"
+    t.bigint "approver_id", null: false
     t.datetime "created_at", null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
@@ -72,10 +72,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_09_053850) do
     t.string "name", null: false
     t.string "password_digest", null: false
     t.integer "role", default: 0, null: false
-    t.bigint "team_id", null: false
+    t.bigint "team_id"
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["team_id"], name: "index_users_on_team_id"
+    t.check_constraint "((`role` = 0) and (`team_id` is not null)) or ((`role` = 1) and (`team_id` is null))", name: "chk_users_team_matches_role"
     t.check_constraint "`role` between 0 and 1", name: "chk_users_role_in_enum"
   end
 

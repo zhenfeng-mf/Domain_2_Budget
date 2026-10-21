@@ -1,0 +1,36 @@
+<% content_for :title, "予算を作成 | Budget App" %>
+
+<h1 class="mb-6 text-2xl font-semibold">予算を作成</h1>
+
+<% if @budget.errors.any? %>
+  <div role="alert" class="mb-4 theme-alert theme-alert-error">
+    <p>入力内容を確認してください：</p>
+    <ul class="list-disc pl-5">
+      <% @budget.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<%= form_with model: @budget, class: "space-y-4" do |form| %>
+  <div>
+    <%= form.label :team_id, "チーム", class: "mb-1 block" %>
+    <%= form.collection_select :team_id, @teams, :id, :name, { prompt: "チームを選択してください" }, { required: true, class: "theme-control w-full" } %>
+  </div>
+  <div>
+    <%= form.label :year_month, "月", class: "mb-1 block" %>
+    <%= form.month_field :year_month, value: @budget.year_month&.strftime("%Y-%m"), required: true, class: "theme-control w-full" %>
+  </div>
+  <div>
+    <%= form.label :category_id, "カテゴリ", class: "mb-1 block" %>
+    <%= form.collection_select :category_id, @categories, :id, :name, { prompt: "カテゴリを選択してください" }, { required: true, class: "theme-control w-full" } %>
+  </div>
+  <div>
+    <%= form.label :amount, "予算額（円）", class: "mb-1 block" %>
+    <%= form.number_field :amount, min: 0, step: 1, required: true, class: "theme-control w-full" %>
+  </div>
+  <%= form.submit "作成する", class: "theme-button" %>
+<% end %>
+
+<p class="mt-6"><%= link_to "予算一覧に戻る", budgets_path, class: "theme-link" %></p>

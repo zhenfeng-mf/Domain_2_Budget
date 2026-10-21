@@ -1,0 +1,31 @@
+<div class="overflow-x-auto">
+    <table class="theme-table w-full border-collapse text-left">
+      <thead>
+        <tr class="border-b">
+          <th class="p-2">チーム</th>
+          <th class="p-2">月</th>
+          <th class="p-2">カテゴリ</th>
+          <th class="p-2 text-right">予算額</th>
+          <th class="p-2 text-right">承認済み</th>
+          <th class="p-2 text-right">残額</th>
+          <% if show_actions %><th class="p-2">操作</th><% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <% budgets.each do |budget| %>
+          <tr class="border-b">
+            <td class="p-2"><%= budget.team.name %></td>
+            <td class="p-2"><%= MonthBucket.label(budget.year_month) %></td>
+            <td class="p-2"><%= budget.category.name %></td>
+            <td class="p-2 text-right"><%= number_to_currency(budget.amount, unit: "¥", precision: 0) %></td>
+            <td class="p-2 text-right"><%= number_to_currency(budget.approved_total, unit: "¥", precision: 0) %></td>
+            <td class="p-2 text-right"><%= number_to_currency(budget.remaining, unit: "¥", precision: 0) %></td>
+            <% if show_actions %>
+              <td class="p-2"><%= link_to "編集", edit_budget_path(budget), class: "theme-link" if budget.year_month > MonthBucket.current %></td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  

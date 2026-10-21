@@ -10,7 +10,9 @@ class Expense < ApplicationRecord
   validates :used_on, presence: true
   validates :amount, numericality: { only_integer: true, greater_than_or_equal_to: 1 } # I-03
   validates :purpose, presence: true, length: { maximum: 255 }
+  validate :requester_must_be_member
   validate :used_on_is_immutable_once_out_of_draft   # I-08
+  validate :status_transition_is_valid, on: :update   # I-05
   validate :terminal_states_are_immutable            # I-11 protects approved_total
   validate :matching_budget_must_exist, if: :requires_budget?  # I-10 / A-03
 
@@ -19,16 +21,20 @@ class Expense < ApplicationRecord
   end
 
   def budget
-    return nil if used_on.blank? || category_id.blank?
+    return nil if used_on.blank? || category_id.blank? || user.nil?
     Budget.for(team: user.team, category: category, on: used_on)
   end
 
   def editable_by?(actor)
     # A-01: a member may still fix a 申請済み request; 承認済み/却下 are terminal (A-02)
-    user_id == actor.id && (draft? || submitted?)
+    actor&.member? && user_id == actor.id && (draft? || submitted?)
   end
 
   private
+
+  def requester_must_be_member
+    errors.add(:user, "はメンバーである必要があります") if user.present? && !user.member?
+  end
 
   def requires_budget?
     !draft? && used_on.present? && category_id.present? && user_id.present?
@@ -44,6 +50,14 @@ class Expense < ApplicationRecord
     return if new_record? || !used_on_changed?
     return if status_was == "draft"   # a draft may still move months (A-06)
     errors.add(:used_on, "は申請後は変更できません（I-08）")
+  end
+
+  def status_transition_is_valid
+    return unless status_changed?
+    return if status_was == "draft" && status == "submitted"
+    return if status_was == "submitted" && status.in?(%w[approved rejected])
+
+    errors.add(:status, "はこの状態から変更できません（I-05）")
   end
 
   def terminal_states_are_immutable

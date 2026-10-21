@@ -1,0 +1,44 @@
+<% content_for :title, "ホーム | Budget App" %>
+
+<h1 class="mb-2 text-2xl font-semibold">Budget App</h1>
+<p class="mb-6"><%= current_user.name %>さん（<%= current_user.email %>）</p>
+
+<% if current_user.member? %>
+  <section class="mb-6">
+    <h2 class="mb-3 text-xl font-semibold">My requests</h2>
+    <% if @expenses.any? %>
+      <ul class="space-y-2">
+        <% @expenses.each do |expense| %>
+          <li><%= expense.purpose %> — <%= number_to_currency(expense.amount, unit: "¥", precision: 0) %> — <%= expense.status %></li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p>申請はまだありません。</p>
+    <% end %>
+  </section>
+  <p class="mb-6"><%= link_to "予算サマリー", budget_summary_path, class: "theme-link" %></p>
+<% else %>
+  <section class="mb-6">
+    <h2 class="mb-3 text-xl font-semibold"><%= link_to "Budgets", budgets_path, class: "theme-link" %></h2>
+    <% if @teams.any? %>
+      <p>担当チーム: <%= @teams.map(&:name).join("、") %></p>
+    <% else %>
+      <p>担当チームはありません。</p>
+    <% end %>
+    <p class="mt-2"><%= link_to "予算サマリー", budget_summary_path, class: "theme-link" %></p>
+  </section>
+  <section class="mb-6">
+    <h2 class="mb-3 text-xl font-semibold">Pending requests</h2>
+    <% if @pending_expenses.any? %>
+      <ul class="space-y-2">
+        <% @pending_expenses.each do |expense| %>
+          <li><%= expense.user.team.name %> — <%= expense.purpose %> — <%= number_to_currency(expense.amount, unit: "¥", precision: 0) %></li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p>承認待ちの申請はありません。</p>
+    <% end %>
+  </section>
+<% end %>
+
+<%= button_to "ログアウト", logout_path, method: :delete, class: "theme-button-secondary" %>

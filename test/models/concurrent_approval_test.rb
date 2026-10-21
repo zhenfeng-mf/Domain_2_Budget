@@ -7,10 +7,9 @@ class ConcurrentApprovalTest < ActiveSupport::TestCase
   self.use_transactional_tests = false
 
   setup do
-    @team     = Team.create!(name: "Race #{SecureRandom.hex(4)}")
     @approver = User.create!(name: "承認者", email: "race-a-#{SecureRandom.hex(4)}@example.com",
-                             password: "password", role: :approver, team: @team)
-    @team.update!(approver: @approver)
+                             password: "password", role: :approver)
+    @team     = Team.create!(name: "Race #{SecureRandom.hex(4)}", approver: @approver)
     @member   = User.create!(name: "申請者", email: "race-m-#{SecureRandom.hex(4)}@example.com",
                              password: "password", role: :member, team: @team)
     @category = Category.create!(name: "Race #{SecureRandom.hex(4)}")
@@ -26,9 +25,9 @@ class ConcurrentApprovalTest < ActiveSupport::TestCase
   teardown do
     Expense.where(id: [@first.id, @second.id]).delete_all
     Budget.where(id: @budget.id).delete_all
-    @team.update_columns(approver_id: nil)
-    User.where(id: [@approver.id, @member.id]).delete_all
+    User.where(id: @member.id).delete_all
     Team.where(id: @team.id).delete_all
+    User.where(id: @approver.id).delete_all
     Category.where(id: @category.id).delete_all
   end
 

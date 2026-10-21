@@ -1,0 +1,12 @@
+<% content_for :title, "Budgets | Budget App" %>
+
+<h1 class="mb-6 text-2xl font-semibold">Budgets</h1>
+<p class="mb-4"><%= link_to "予算を作成", new_budget_path, class: "theme-link" %></p>
+
+<% if @budgets.any? %>
+  <%= render "table", budgets: @budgets, show_actions: true %>
+<% else %>
+  <p>担当チームの予算はまだありません。</p>
+<% end %>
+
+<p class="mt-6"><%= link_to "ホームに戻る", root_path, class: "theme-link" %></p>

@@ -1,21 +1,19 @@
-# Budget App
+# Team Budget and Expense Requests
 
-A Ruby on Rails application built with Rails 8 and MySQL 9.
+A Ruby on Rails 8 and MySQL 9 project for team budgets and expense approval. The core browser flow is still being built. The current position is recorded in [project status](docs/status.md).
 
-## Requirements & Stack
+## Project documents
 
-* **Ruby:** 3.2.3 (or as specified in `.ruby-version`)
-* **Rails:** 8.0+
-* **Database:** MySQL 9.0+ (managed via Docker Compose)
-* **Docker & Docker Compose**
+- [Eight-day plan](docs/plan.md) — 56-hour schedule and checkpoints
+- [Task checklist](docs/tasks.md) — small tasks with completion checks
+- [Requirements](REQUIREMENTS.md) — users, required flow, and business rules
+- [Design](DESIGN.md) and [decisions](DECISIONS.md) — data model and tradeoffs
+- [Testing](TESTING.md) and [AI usage](AI_USAGE.md) — evidence and verification
 
----
+## Setup
 
-## Local Development Setup
+Docker Compose, migrations, seeds, and browser access will be verified on Day 1. Add the exact clean-clone commands and demo accounts here after that check.
 
-Follow these steps to set up and run the application locally:
+## Public demo
 
-### 1. Clone the Repository
-```bash
-git clone <your-repository-url>
-cd budget_app
+Deployment URL: **TBD**. Hosting and demo data will be confirmed before submission.

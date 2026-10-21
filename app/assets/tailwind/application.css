@@ -1,1 +1,127 @@
 @import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --solarized-base3: #fdf6e3;
+  --solarized-base2: #eee8d5;
+  --solarized-base1: #93a1a1;
+  --solarized-base00: #657b83;
+  --solarized-base01: #586e75;
+  --solarized-base02: #073642;
+  --solarized-blue: #268bd2;
+  --solarized-cyan: #2aa198;
+  --solarized-green: #859900;
+  --solarized-red: #dc322f;
+}
+
+@layer base {
+  body {
+    min-height: 100vh;
+    background: var(--solarized-base3);
+    color: var(--solarized-base01);
+  }
+
+  h1, h2 {
+    color: var(--solarized-base02);
+  }
+
+  ::selection {
+    background: var(--solarized-cyan);
+    color: var(--solarized-base02);
+  }
+}
+
+@layer components {
+  .theme-shell {
+    background: var(--solarized-base2);
+    border: 1px solid var(--solarized-base1);
+    border-top: 4px solid var(--solarized-cyan);
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 32px rgb(7 54 66 / 8%);
+  }
+
+  .theme-link {
+    color: #176a97;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .theme-link:hover {
+    color: var(--solarized-base02);
+  }
+
+  .theme-control {
+    background: var(--solarized-base3);
+    color: var(--solarized-base02);
+    border: 1px solid var(--solarized-base1);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .theme-control:focus-visible,
+  .theme-link:focus-visible,
+  .theme-button:focus-visible,
+  .theme-button-secondary:focus-visible {
+    outline: 3px solid var(--solarized-blue);
+    outline-offset: 2px;
+  }
+
+  .theme-button,
+  .theme-button-secondary {
+    cursor: pointer;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+  }
+
+  .theme-button {
+    background: #176a97;
+    color: var(--solarized-base3);
+  }
+
+  .theme-button:hover {
+    background: var(--solarized-base02);
+  }
+
+  .theme-button-secondary {
+    background: var(--solarized-base3);
+    color: var(--solarized-base02);
+    border: 1px solid var(--solarized-base1);
+  }
+
+  .theme-button-secondary:hover {
+    background: var(--solarized-base3);
+    border-color: var(--solarized-cyan);
+  }
+
+  .theme-alert {
+    border-radius: 0.375rem;
+    border-left: 4px solid;
+    padding: 0.75rem 1rem;
+  }
+
+  .theme-alert-error {
+    background: #f9e3d8;
+    border-color: var(--solarized-red);
+    color: #7d3129;
+  }
+
+  .theme-alert-success {
+    background: #e7edcf;
+    border-color: var(--solarized-green);
+    color: #405500;
+  }
+
+  .theme-table th {
+    background: var(--solarized-base3);
+    color: var(--solarized-base02);
+  }
+
+  .theme-table tr {
+    border-color: var(--solarized-base1);
+  }
+
+  .theme-table tbody tr:hover {
+    background: rgb(253 246 227 / 70%);
+  }
+}

@@ -78,4 +78,22 @@ class DbConstraintsTest < ActiveSupport::TestCase
       budgets(:next_books).update_columns(year_month: Time.zone.today.next_month.change(day: 15))
     end
   end
+
+  test "DB requires a team for members" do
+    assert_raises ActiveRecord::StatementInvalid do
+      users(:taro).update_columns(team_id: nil)
+    end
+  end
+
+  test "DB forbids a team for approvers" do
+    assert_raises ActiveRecord::StatementInvalid do
+      users(:hanako).update_columns(team_id: teams(:alpha).id)
+    end
+  end
+
+  test "DB requires an approver for every team" do
+    assert_raises ActiveRecord::NotNullViolation do
+      teams(:alpha).update_columns(approver_id: nil)
+    end
+  end
 end

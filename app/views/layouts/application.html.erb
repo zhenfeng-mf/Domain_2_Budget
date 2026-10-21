@@ -6,6 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Budget App">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#fdf6e3">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
@@ -24,7 +25,10 @@
   </head>
 
   <body>
-    <main class="container mx-auto mt-28 px-5 flex">
+    <main class="theme-shell mx-auto my-10 max-w-4xl px-6 py-8 sm:px-10">
+      <% flash.each do |type, message| %>
+        <p role="alert" class="theme-alert mb-4 <%= type == 'alert' ? 'theme-alert-error' : 'theme-alert-success' %>"><%= message %></p>
+      <% end %>
       <%= yield %>
     </main>
   </body>

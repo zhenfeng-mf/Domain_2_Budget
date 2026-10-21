@@ -16,6 +16,31 @@ class InvariantAppLayerTest < ActiveSupport::TestCase
     assert_includes e.errors[:used_on].join, "申請後"
   end
 
+  test "submitted expense cannot return to draft to change its usage date" do
+    e = expenses(:taro_submitted)
+    assert_not e.update(status: :draft)
+    assert_includes e.errors[:status].join, "変更できません"
+    assert_equal "submitted", e.reload.status
+  end
+
+  test "draft expense cannot skip submission" do
+    e = expenses(:taro_draft)
+    assert_not e.update(status: :approved)
+    assert_equal "draft", e.reload.status
+  end
+
+  test "expense with a missing user reports a validation error" do
+    e = Expense.new(user_id: 999_999_999, category: categories(:travel),
+                    used_on: Time.zone.today, amount: 1_000,
+                    purpose: "missing user", status: :submitted)
+    assert_not e.valid?
+    assert_includes e.errors.full_messages.join, "予算が未設定"
+  end
+
+  test "anonymous actor cannot edit an expense" do
+    assert_not expenses(:taro_draft).editable_by?(nil)
+  end
+
   # I-09 — budgets are adjustable for future months only
   test "a future month budget can be adjusted" do
     assert budgets(:next_books).update(amount: 60_000)
@@ -52,15 +77,12 @@ class InvariantAppLayerTest < ActiveSupport::TestCase
     assert_not e.reload.update(amount: 1)
   end
 
-  # A-04
-  test "an approver cannot approve their own expense" do
-    own = Expense.create!(user: users(:hanako), category: categories(:travel),
+  test "an approver cannot create an expense" do
+    expense = Expense.new(user: users(:hanako), category: categories(:travel),
                           used_on: Time.zone.today, amount: 1_000,
-                          purpose: "自分の申請", status: :submitted,
-                          submitted_at: Time.current)
-    assert_raises ApproveExpense::Refused do
-      ApproveExpense.call(expense_id: own.id, approver: users(:hanako))
-    end
+                          purpose: "承認者の申請", status: :draft)
+    assert_not expense.valid?
+    assert_includes expense.errors[:user].join, "メンバー"
   end
 
   # I-05 — approve twice
